@@ -454,7 +454,6 @@ def main():
         for mode in ['train', 'val']:
             if mode == 'train':
                 model.train()
-                print(len(train))
                 bar = tqdm.tqdm(enumerate(train), total=len(train))
             else:
                 model.eval()
