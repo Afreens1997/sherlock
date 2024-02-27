@@ -6,7 +6,7 @@
 #SBATCH --time=1-00:00
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=svarna@andrew.cmu.edu
-torchrun --nproc_per_node 1 sherlock.py ../../../../data/tir/projects/tir4/users/svarna/Sherlock/data/subset_train.json ../../../../data/tir/projects/tir4/users/svarna/Sherlock/data/subset_val.json \
+torchrun --nproc_per_node 1 sherlock_train_retrieval.py ../../../../data/tir/projects/tir4/users/svarna/Sherlock/data/subset_train.json ../../../../data/tir/projects/tir4/users/svarna/Sherlock/data/subset_val.json \
        --workers_dataloader 16 \
        --lr .00001 \
        --batch_size 64 \
