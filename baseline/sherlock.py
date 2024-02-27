@@ -138,8 +138,6 @@ class CLIPDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         c_data = self.data[idx]
-        if 'vcr1images' in c_data['inputs']['image']['url']:
-            return None
         image = Image.open(self.url2filepath(c_data['inputs']['image']['url']))
 
         if self.args.hide_true_bbox > 0:
@@ -397,16 +395,27 @@ def main():
     all_images = set()
     imagepair2count = collections.Counter()
     with open(args.train) as f:
-        train = json.load(f)
+        train_file = json.load(f)
+        # data_length = len(train_file)
+
+        # # Split train dataset into Train and val with 80-20 split
+        # train_size = int(0.8 * data_length)
+        # train_indices, val_indices = torch.utils.data.random_split(range(data_length), [train_size, data_length - train_size])
+
         train = torch.utils.data.DataLoader(
-            CLIPDataset(train, args, training=True),
+            CLIPDataset(train_file, args, training=True),
             batch_size=args.batch_size, num_workers=args.workers_dataloader, shuffle=True, worker_init_fn=worker_init_fn)
+
+        # val = torch.utils.data.DataLoader(
+        #     CLIPDataset(train_file, args, training=False),
+        #     batch_size=args.batch_size, num_workers=args.workers_dataloader, shuffle=False,sampler=torch.utils.data.SubsetRandomSampler(val_indices), worker_init_fn=worker_init_fn)
 
     with open(args.val) as f:
         val = json.load(f)
         val = torch.utils.data.DataLoader(
             CLIPDataset(val, args, training=False),
             batch_size=args.batch_size, num_workers=args.workers_dataloader, shuffle=False, worker_init_fn=worker_init_fn)
+    # Treat Validation dataset as Test set.
 
     use_multi = False
     if torch.cuda.device_count() > 1:
@@ -445,6 +454,7 @@ def main():
         for mode in ['train', 'val']:
             if mode == 'train':
                 model.train()
+                print(len(train))
                 bar = tqdm.tqdm(enumerate(train), total=len(train))
             else:
                 model.eval()
