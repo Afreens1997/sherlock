@@ -34,7 +34,7 @@ def main():
             pred_data = json.load(f)
             ids = []
             for data in pred_data:
-                ids.append(data['instance_id'])
+                ids.append(data)
         predictions = dict(zip(ids, pred_vec))
 
     with open(args.answer_key) as f:
