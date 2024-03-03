@@ -83,34 +83,5 @@ with open('predictions/git-bbox_caption_w_inf_predictions.json','w') as f_out:
 
 assert len(predicted_inf) == len(test_dataset)
 
-# output_dir = "vishwa27/GIT_large_captions"
-
-# training_args = Seq2SeqTrainingArguments(
-#     output_dir=output_dir,
-#     learning_rate=5e-5,
-#     num_train_epochs=5,
-#     fp16=True,
-#     per_device_train_batch_size=4,
-#     per_device_eval_batch_size=4,
-#     eval_accumulation_steps=2,
-#     save_total_limit=2,
-#     evaluation_strategy="epoch",
-#     save_strategy="epoch",
-#     logging_steps=100,
-#     remove_unused_columns=False,
-#     push_to_hub=False,
-#     load_best_model_at_end=True
-# )
-
-# trainer = Seq2SeqTrainer(
-#     model=model,
-#     args=training_args,
-#     train_dataset=val_dataset,
-#     eval_dataset=test_dataset,
-#     data_collator=default_data_collator
-# )
-
-# predictions = trainer.predict(test_dataset)
-
 # print(predictions)
 # print(predictions.shape)
