@@ -8,7 +8,7 @@ from bert_score import BERTScorer
 
 DATA_PATH = "../../../../data/tir/projects/tir4/users/svarna/Sherlock/data"
 
-with open(f"{DATA_PATH}/multimodal_baselines/inferences/BLIP_zero_shot.json", "r") as file:
+with open(f"{DATA_PATH}/multimodal_baselines/inferences/BLIP_no_bbox.json", "r") as file:
     inferences = json.load(file)
 
 predictions= []

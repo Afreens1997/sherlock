@@ -10,11 +10,10 @@ from peft import PeftModel, PeftConfig
 from transformers import BertTokenizer, BertModel
 from bert_score import BERTScorer
 
-PEFT_MODEL_ID = "svarna/blip_exp"
-CONFIG = PeftConfig.from_pretrained(PEFT_MODEL_ID)
+# PEFT_MODEL_ID = "svarna/blip_exp"
+# CONFIG = PeftConfig.from_pretrained(PEFT_MODEL_ID)
 
-MODEL = Blip2ForConditionalGeneration.from_pretrained(CONFIG.base_model_name_or_path, load_in_8bit=True, device_map="auto")
-MODEL = PeftModel.from_pretrained(MODEL, PEFT_MODEL_ID)
+MODEL = Blip2ForConditionalGeneration.from_pretrained("Salesforce/blip2-opt-2.7b", load_in_8bit=True, device_map="auto", torch_dtype=torch.float16)
 
 PROCESSOR = AutoProcessor.from_pretrained("Salesforce/blip2-opt-2.7b")
 
@@ -30,7 +29,7 @@ def url2filepath(vg_dir, vcr_dir, url):
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('test')
+    parser.add_argument('data')
     parser.add_argument('result')
     parser.add_argument(
         '--vcr_dir',
@@ -54,33 +53,30 @@ def parse_args():
 
 def inference(args):
 
-    with open(args.test) as f:
-        test_file = json.load(f)
+    with open(args.data) as f:
+        data_file = json.load(f)
 
-    inferences = {} 
-    scorer = BERTScorer(model_type='bert-base-uncased')
+    inferences = {}
 
-    for data in test_file:
+    for data in data_file:
         image = Image.open(url2filepath(args.vg_dir, args.vcr_dir, data['inputs']['image']['url']))
-        image = image.convert('RGBA')
-        overlay = Image.new('RGBA', image.size, '#00000000')
-        draw = ImageDraw.Draw(overlay, 'RGBA')
+        local = {}
         for bbox in data['inputs']['bboxes']:
             left, top = bbox['left'], bbox['top']
             right, bottom = left + bbox['width'], top + bbox['height']
-            # Draw the rectangle
-            draw.rectangle(((left, top), (right, bottom)), fill='#ff05cd3c', outline='#05ff37ff', width=3)
-        image = Image.alpha_composite(image, overlay)
-        prompt = "Question: What objects can be seen in this image and what can you infer? Answer:"
-        inputs = args.processor(images=image, text=prompt, return_tensors="pt").to(args.device, torch.float16)
+            img = image.crop((left,top,right,bottom))
+            try:
+                inputs = args.processor(images=img, return_tensors="pt").to(args.device, torch.float16)
 
-        generated_ids = args.model.generate(**inputs, max_length=25)
-        generated_caption = args.processor.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
-        _, _, F1 = scorer.score([generated_caption], [data['targets']['inference']])
-        F1 = F1.item()
-        inferences[data['instance_id']] = F1
+                generated_ids = args.model.generate(**inputs, max_length=25)
+                generated_caption = args.processor.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
+                local[data['inputs']['clue']] = local.get(data['inputs']['clue'], []) + [generated_caption]
+            except:
+                print("Error with: ", data['instance_id'])
+        print(local)
+        data['local_captions'] = local
     
-    return inferences
+    return data_file
 
 
 
@@ -88,8 +84,6 @@ def main():
     args = parse_args()
     args.device = 'cuda' if torch.cuda.is_available() else 'cpu'
     inferences = inference(args)
-
-    inferences = dict(sorted(inferences.items(), key=lambda x: x[1]))
 
     with open(args.result, "w") as f:
         json.dump(inferences, f)

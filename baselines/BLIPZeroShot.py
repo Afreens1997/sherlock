@@ -6,6 +6,8 @@ from io import BytesIO
 import matplotlib.pyplot as plt
 from transformers import AutoImageProcessor, AutoModelForObjectDetection, AutoProcessor, Blip2ForConditionalGeneration
 import torch
+from transformers import BertTokenizer, BertModel
+from bert_score import BERTScorer
 
 DATA_PATH = "../../../../data/tir/projects/tir4/users/svarna/Sherlock/data"
 TEST_FILE_PATH = f"{DATA_PATH}/subset_test.json"
@@ -31,6 +33,7 @@ def url2filepath(url):
             return VCR_DIR + '/'.join(url.split('/')[-3:])
 
 inf = {}
+scorer = BERTScorer(model_type='bert-base-uncased')
 
 for i, data in enumerate(test_data):
     image = Image.open(url2filepath(data['inputs']['image']['url']))
@@ -49,12 +52,16 @@ for i, data in enumerate(test_data):
     # prompt = "Question: What inference can be drawn by looking at the content inside the red rectangle? Do not include 'red rectangle' in your answer. Answer:"
     # prompt = "Focus on the given image. Now focus on the region within the red rectangle. Generate a caption for the image by infering from the view in the red rectangle. The generated caption is: "
     # prompt = "Generate a caption for the given image by focusing on the red rectangle. Generated caption is:"
-    inputs = processor(images=image, return_tensors="pt").to(device, dtype=torch.float16)
+    prompt = "Question: What objects can be seen in this image and what can you infer? Answer:"
+    inputs = processor(images=image, text=prompt, return_tensors="pt").to(device, dtype=torch.float16)
     generated_ids = model.generate(**inputs)
     generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
-    print(i)
-    print(generated_text, data['targets']['inference'])
-    inf[data['instance_id']] = (generated_text, data['targets']['inference'])
+    _, _, F1 = scorer.score([generated_text], [data['targets']['inference']])
+    F1 = F1.item()
+    inf[data['instance_id']] = F1
+
+sorted_dict = dict(sorted(inf.items(), key=lambda x: x[1]))
+print(sorted_dict)
     
-with open(f"{DATA_PATH}/multimodal_baselines/inferences/BLIP_zero_shot.json", "w") as file:
-    json.dump(inf, file)
+with open(f"{DATA_PATH}/multimodal_baselines/inferences/BLIP_zero_shot_scores.json", "w") as file:
+    json.dump(sorted_dict, file)
