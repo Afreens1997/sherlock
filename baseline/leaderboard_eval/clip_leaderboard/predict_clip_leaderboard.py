@@ -1,6 +1,3 @@
-'''
-Prediction script for leaderboard
-'''
 import argparse
 import numpy as np
 import torch
@@ -129,8 +126,8 @@ def retrieval_main(model, args):
 
     all_images, all_inferences = set(), set()
     for d in tqdm.tqdm(instances):
-        cur_image = frozendict({'url': d['inputs']['image']['url'], 'bboxes': tuple([frozendict(r) for r in d['inputs']['bboxes']])})
-        cur_inference = frozendict({'caption': d['targets']['inference']})
+        cur_image = frozendict({'url': d['image']['url'], 'bboxes': tuple([frozendict(r) for r in d['region']])})
+        cur_inference = frozendict({'caption': d['inference']})
         all_images.add(cur_image)
         all_inferences.add(cur_inference)
 
@@ -168,10 +165,10 @@ def retrieval_main(model, args):
                                                       n_jobs=args.workers_dataloader) + 1
     result = {}
     for d in tqdm.tqdm(instances):
-        cur_image = frozendict({'url': d['inputs']['image']['url'], 'bboxes': tuple([frozendict(r) for r in d['inputs']['bboxes']])})
-        cur_inference = frozendict({'caption': d['targets']['inference']})
+        cur_image = frozendict({'url': d['image']['url'], 'bboxes': tuple([frozendict(r) for r in d['region']])})
+        cur_inference = frozendict({'caption': d['inference']})
         im_idx, inf_idx = im2idx[cur_image], inf2idx[cur_inference]
-        result[d['instance_id']] = im2text_sim[im_idx, inf_idx]
+        result[d['test_id']] = im2text_sim[im_idx, inf_idx]
 
     print('writing {} to {}'.format(len(result), args.output_npy))
 
