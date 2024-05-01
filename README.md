@@ -1,3 +1,5 @@
-# sherlock
+# Sherlock - Visual Abductive Reasoning
 
-Code for Unimodal and Multimodal Baselines for 11-777 Sherlock Report 2
+This repository outlines the work done in the field of Visual Abductive Reasoning on the Sherlock Dataset.  
+
+
